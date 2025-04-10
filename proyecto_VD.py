@@ -1,99 +1,78 @@
 import base64
 import os
 import pandas as pd
-from dash import Dash, dcc, html
+from dash import Dash, dcc, html, Input, Output
 import plotly.express as px
+from wordcloud import WordCloud
+import io
+import numpy as np
+from PIL import Image
+import matplotlib
+from plotly.io import read_json
+matplotlib.use('Agg')
 
-# Imagen banner
+# Imagen
 image_path = os.path.expanduser(r"C:\Users\karla\OneDrive\Escritorio\hola\logo UFRO.png")
-
 with open(image_path, "rb") as f:
     encoded_image = base64.b64encode(f.read()).decode()
 
-# Leer Excel
+# Cargar datos
 df1 = pd.read_excel("BD WOS 2023.xlsx", sheet_name="Hoja1")
 df2 = pd.read_excel("BD WOS 2023.xlsx", sheet_name="Hoja2")
+df3 = pd.read_excel("BD WOS 2023.xlsx", sheet_name="Hoja3")
+df2.columns = df2.columns.str.strip().str.lower()
 
-# Gráfico de torta (cuartiles)
+# Serie de tiempo
+articulos_por_anio = df2[["año", "cantidad de articulos"]].dropna().sort_values("año")
+fig_serie_tiempo = px.line(articulos_por_anio, x='año', y='cantidad de articulos', markers=True,
+    labels={'año': 'Año', 'cantidad de articulos': 'Cantidad'}
+)
+fig_serie_tiempo.update_traces(line=dict(width=3), marker=dict(size=8))
+fig_serie_tiempo.update_layout(margin=dict(t=100))
+
+# Torta cuartiles
 cuartil_counts = df1["Cuartil"].value_counts().reset_index()
 cuartil_counts.columns = ["Cuartil", "Cantidad"]
 
-# Normalizar columnas de Hoja2
-df2.columns = df2.columns.str.strip().str.lower()
-
-if "año" in df2.columns and "cantidad de articulos" in df2.columns:
-    articulos_por_anio = df2[["año", "cantidad de articulos"]].dropna()
-    articulos_por_anio = articulos_por_anio.sort_values("año")
-else:
-    articulos_por_anio = pd.DataFrame(columns=["año", "cantidad de articulos"])
-
-# Gráfico de serie de tiempo (línea)
-fig_serie_tiempo = px.line(
-    articulos_por_anio,
-    x='año',
-    y='cantidad de articulos',
-    markers=True,
-    title='Cantidad de artículos por año',
-    labels={'año': 'Año', 'cantidad de articulos': 'Cantidad'}
+# Correlación
+correlacion_data = df1[["Cuartil", "ES UFRO?"]].dropna()
+correlacion_data["ES UFRO?"] = correlacion_data["ES UFRO?"].replace({1: "Sí", 0: "No"}).astype(str).str.capitalize()
+grouped_counts = correlacion_data.value_counts().reset_index()
+grouped_counts.columns = ["Cuartil", "ES UFRO?", "Cantidad"]
+fig_correlacion = px.bar(grouped_counts, x="Cuartil", y="Cantidad", color="ES UFRO?", barmode="group",
+    labels={"Cantidad": "Número de artículos"},
+    category_orders={"Cuartil": ["Q1", "Q2", "Q3", "Q4", "S/Q"]}
 )
 
-fig_serie_tiempo.update_traces(line=dict(width=3), marker=dict(size=8))
-fig_serie_tiempo.update_layout(
-    margin=dict(t=100),
-    yaxis=dict(range=[0, articulos_por_anio["cantidad de articulos"].max() * 1.2])
+# Treemap
+treemap_data = df1[["Cuartil", "REVISTA"]].dropna()
+treemap_data = treemap_data.groupby(["Cuartil", "REVISTA"]).size().reset_index(name='Cantidad')
+fig_treemap = px.treemap(treemap_data, path=["Cuartil", "REVISTA"], values="Cantidad")
+fig_treemap.update_traces(
+    root_color="lightgrey",
+    hovertemplate='<b>Cuartil:</b> %{parent}<br><b>Revista:</b> %{label}<br><b>Cantidad:</b> %{value}<extra></extra>'
 )
 
-# Gráfico de correlación: Cuartil vs. ES UFRO?
-if "Cuartil" in df1.columns and "ES UFRO?" in df1.columns:
-    correlacion_data = df1[["Cuartil", "ES UFRO?"]].dropna()
+# Top 5 editoriales 
+df_editoriales = df1[["EDITORIAL"]].dropna()
+df_editoriales = df_editoriales[df_editoriales["EDITORIAL"] != ""]
+top_editoriales = df_editoriales["EDITORIAL"].value_counts().nlargest(5).reset_index()
+top_editoriales.columns = ["Editorial", "Cantidad"]
 
-    correlacion_data["ES UFRO?"] = correlacion_data["ES UFRO?"].replace({1: "Sí", 0: "No"})
-    correlacion_data["ES UFRO?"] = correlacion_data["ES UFRO?"].astype(str).str.capitalize()
+fig_editoriales = px.bar(
+    top_editoriales,
+    x="Editorial",
+    y="Cantidad",
+    labels={"Editorial": "Editorial", "Cantidad": "Número de publicaciones"}
+)
+fig_editoriales.update_layout(margin=dict(t=80, l=40, r=40, b=40))
+fig_editoriales.update_xaxes(categoryorder="total descending")
 
-    grouped_counts = correlacion_data.value_counts().reset_index()
-    grouped_counts.columns = ["Cuartil", "ES UFRO?", "Cantidad"]
-
-    cuartil_ordenado = ["Q1", "Q2", "Q3", "Q4", "S/Q"]
-
-    fig_correlacion = px.bar(
-        grouped_counts,
-        x="Cuartil",
-        y="Cantidad",
-        color="ES UFRO?",
-        barmode="group",
-        title="Distribución de liderazgos UFRO por cuartil",
-        labels={"Cantidad": "Número de artículos"},
-        category_orders={"Cuartil": cuartil_ordenado}
-    )
-else:
-    fig_correlacion = px.scatter(title="No hay datos válidos para el gráfico de correlación")
-
-# Gráfico Tree Map por Cuartil y Revista
-if "Cuartil" in df1.columns and "REVISTA" in df1.columns:
-    treemap_data = df1[["Cuartil", "REVISTA"]].dropna()
-    treemap_data = treemap_data.groupby(["Cuartil", "REVISTA"]).size().reset_index(name='Cantidad')
-
-    fig_treemap = px.treemap(
-        treemap_data,
-        path=["Cuartil", "REVISTA"],
-        values="Cantidad",
-        title="Distribución de revistas por cuartil"
-    )
-
-    fig_treemap.update_traces(
-        root_color="lightgrey",
-        hovertemplate='<b>Cuartil:</b> %{parent}<br><b>Revista:</b> %{label}<br><b>Cantidad:</b> %{value}<extra></extra>'
-    )
-else:
-    fig_treemap = px.scatter(title="No hay datos válidos para el gráfico Treemap")
-
-# App Dash
+# App
 app = Dash(__name__)
 app.title = "Dashboard Publicaciones"
 
 app.layout = html.Div([
-
-    # Banner
     html.Div([
         html.Img(
             src='data:image/png;base64,{}'.format(encoded_image),
@@ -105,12 +84,10 @@ app.layout = html.Div([
 
     html.Div([
         html.P(
-            "El presente dashboard viene a entregar información respecto a las publicaciones "
-            "científicas de la Web of Science (WoS) de la Universidad de La Frontera (UFRO) registradas por la Agencia Nacional de Investigación y Desarrollo (ANID) durante el 2023. \n \n"
-            "Con estos antecedentes, aspiramos a brindar una mirada general respecto de la productividad de la Institución en el periodo mencionado."
-            "\n \n "
-            "Para la elaboración de este dashboard se ha considerado que la fuente primaria de información la constituye el listado de publicaciones WoS con afiliación a la "
-            "Universidad de La Frontera elaborado por ANID, con datos desde enero a diciembre del 2023.",
+            "El presente dashboard viene a entregar información respecto a las publicaciones científicas de la Web of Science (WoS) de la Universidad de La Frontera (UFRO) registradas por ANID durante el 2023. Con estos antecedentes, aspiramos a brindar una mirada general respecto de la productividad de la Institución. Para la elaboración de este dashboard se ha considerado que la fuente primaria de información la constituye el listado de publicaciones WoS con afiliación a la UFRO elaborado por ANID. \n \n"
+            "Complementariamente, se han incorporado visualizaciones que permiten analizar distintos aspectos de la producción científica: evolución temporal, niveles de impacto según cuartil, liderazgo institucional, redes internacionales de colaboración, diversidad de revistas y principales líneas temáticas abordadas. Este enfoque integral facilita no solo la observación de patrones productivos, sino también la identificación de fortalezas estratégicas que contribuyen al posicionamiento de la universidad en el ámbito científico nacional e internacional.",
+            
+           
             style={
                 'whiteSpace': 'pre-line',
                 'textAlign': 'justify',
@@ -122,50 +99,182 @@ app.layout = html.Div([
         )
     ]),
 
-    # Gráfico de serie de tiempo
-    dcc.Graph(
-        id='grafico-serie-tiempo',
-        figure=fig_serie_tiempo
-    ),
+    html.H3("Cantidad de artículos por año", style={'marginLeft': '60px'}),
+    html.P("La gráfica muestra la evolución anual del número de publicaciones científicas indexadas en la Web of Science (WoS) con afiliación a la Universidad de La Frontera (UFRO), registradas por ANID. Se observa una tendencia general al alza en la producción científica institucional entre los años 2018 y 2023. Este comportamiento queda reflejado en el aumento sostenido de artículos, destacando especialmente el crecimiento observado a partir del año 2020, con un alza en 2023 que supera las 700 publicaciones. Esta alza sugiere un fortalecimiento progresivo de la actividad investigativa en la universidad durante el periodo analizado.", 
+           style={
+                'whiteSpace': 'pre-line',
+                'textAlign': 'justify',
+                'fontSize': '16px',
+                'maxWidth': '1000px',
+                'margin': '0 auto',
+                'padding': '15px'
+                  
+                  
+                  }),
+    dcc.Graph(id='grafico-serie-tiempo', figure=fig_serie_tiempo),
 
-    # Gráfico de cuartiles (torta)
-    dcc.Graph(
-        id='grafico-cuartiles',
-        figure=px.pie(
-            cuartil_counts,
-            names='Cuartil',
-            values='Cantidad',
-            title='Cantidad de artículos por cuartil'
-        )
-    ),
+    html.H3("Cantidad de artículos por cuartil", style={'marginLeft': '60px'}),
+    html.P("La gráfica muestra la distribución de las publicaciones científicas de la UFRO durante 2023 según el cuartil de la revista, conforme al Journal Citation Reports (JCR). Los cuartiles dividen a las revistas en cuatro grupos según su factor de impacto, siendo Q1 el de mayor prestigio. También se incluye una categoría S/Q para revistas sin cuartil asignado. \n \n"
+            "El 40,6% de las publicaciones se concentra en revistas Q1 y el 31,1% en Q2, lo que indica que más del 70% de la producción institucional se ubica en los dos cuartiles superiores. Esta distribución evidencia un fuerte énfasis en la publicación en revistas de alta calidad y visibilidad, lo que contribuye al posicionamiento internacional de la investigación realizada en la UFRO.", 
+           style={
+                'whiteSpace': 'pre-line',
+                'textAlign': 'justify',
+                'fontSize': '16px',
+                'maxWidth': '1000px',
+                'margin': '0 auto',
+                'padding': '15px'
+                  
+              
+                  
+                  
+                  
+                  }),
+    dcc.Graph(id='grafico-cuartiles',
+              figure=px.pie(cuartil_counts, names='Cuartil', values='Cantidad')),
 
-    # Texto explicativo del cuartil
+    html.H3("Distribución geográfica de artículos por país", style={'marginLeft': '60px'}),
+    html.P("La visualización presenta la distribución geográfica de las publicaciones científicas de la UFRO durante el año 2023, identificando los países de afiliación de los coautores registrados en la Web of Science. Este mapa permite observar el alcance internacional de las colaboraciones científicas desarrolladas por investigadores de la universidad. \n \n"
+            "Se evidencia una presencia significativa de publicaciones en conjunto con instituciones de países como Estados Unidos, España, Alemania, Brasil y China, lo que indica una amplia red de cooperación global. Esta dimensión internacional es un componente clave para el fortalecimiento de la investigación y la visibilidad institucional a nivel mundial.", 
+           style={
+                'whiteSpace': 'pre-line',
+                'textAlign': 'justify',
+                'fontSize': '16px',
+                'maxWidth': '1000px',
+                'margin': '0 auto',
+                'padding': '15px'
+                  
+                  
+                  }),
     html.Div([
-        html.P(
-            "*El cuartil es un indicador que sirve para evaluar la importancia relativa de una revista dentro del total de revistas de su área.",
+        html.Label("Filtrar por país:", style={
+            'fontWeight': 'bold', 'fontSize': '16px', 'color': '#003865', 'marginRight': '10px'
+        }),
+        dcc.Dropdown(
+            id='filtro-pais',
+            options=[{"label": pais, "value": pais} for pais in sorted(df3["Pais_Edit"].dropna().unique())],
+            placeholder="Selecciona un país",
+            clearable=True,
             style={
-                'fontStyle': 'italic',
-                'textAlign': 'center',
-                'fontSize': '14px',
-                'color': '#333',
-                'maxWidth': '800px',
-                'margin': '10px auto'
+                'width': '300px', 'borderRadius': '8px', 'padding': '6px',
+                'border': '1px solid #ccc', 'boxShadow': '1px 1px 6px rgba(0,0,0,0.1)',
+                'backgroundColor': '#f5f5f5', 'color': '#003865', 'fontWeight': 'bold'
             }
         )
-    ]),
+    ], style={'display': 'flex', 'alignItems': 'center', 'gap': '10px',
+              'marginLeft': '60px', 'marginBottom': '20px'}),
+    dcc.Graph(id='grafico-mapa'),
 
-    # Gráfico de correlación
-    dcc.Graph(
-        id='grafico-correlacion',
-        figure=fig_correlacion
-    ),
+    html.H3("Distribución de liderazgos UFRO por cuartil", style={'marginLeft': '60px'}),
+    html.P("Esta gráfica muestra la cantidad de publicaciones lideradas por investigadores de la UFRO en 2023, segmentadas según el cuartil de la revista. Se considera liderazgo cuando el autor principal o de correspondencia pertenece a la institución, implicando un rol activo en la conducción del estudio. \n \n"
+            "Se observa que aproximadamente el 38% de estos liderazgos se concentran en revistas Q1 y un 30% en Q2, sumando cerca del 68% en los cuartiles superiores. Esto evidencia que una parte importante de la producción científica liderada desde la UFRO se inserta en revistas de alto impacto, consolidando su posicionamiento como actor relevante en la investigación internacional.", 
+           style={
+                'whiteSpace': 'pre-line',
+                'textAlign': 'justify',
+                'fontSize': '16px',
+                'maxWidth': '1000px',
+                'margin': '0 auto',
+                'padding': '15px'
+                  
+                  
+                  }),
+    dcc.Graph(id='grafico-correlacion', figure=fig_correlacion),
 
-    # Gráfico Tree Map
-    dcc.Graph(
-        id='grafico-treemap',
-        figure=fig_treemap
-    )
+    html.H3("Distribución de revistas por cuartil", style={'marginLeft': '60px'}),
+    html.P("La gráfica permite visualizar la variedad de revistas científicas en las que publicó la UFRO durante 2023, lo que entrega una perspectiva sobre la amplitud de los espacios editoriales utilizados por la institución. La presencia de una gran cantidad de revistas distintas indica una estrategia de difusión diversa, que abarca múltiples áreas del conocimiento. \n \n "
+            "El predominio de revistas clasificadas en los cuartiles superiores (Q1 y Q2) sugiere que la UFRO no solo publica con frecuencia, sino que también selecciona cuidadosamente medios con altos estándares editoriales. Esta diversidad de revistas refuerza la proyección internacional y el alcance interdisciplinario de la investigación institucional.", 
+           style={
+                 'whiteSpace': 'pre-line',
+                'textAlign': 'justify',
+                'fontSize': '16px',
+                'maxWidth': '1000px',
+                'margin': '0 auto',
+                'padding': '15px'
+                  
+                  
+                  }),
+    dcc.Graph(id='grafico-treemap', figure=fig_treemap),
+
+    html.H3("Top 5 editoriales por número de publicaciones", style={'marginLeft': '60px'}),
+    html.P("Aquí va la descripción del gráfico", style={'marginLeft': '60px'}),
+    dcc.Graph(id='grafico-editoriales', figure=fig_editoriales),
+
+    html.H3("Nube de palabras clave", style={'marginLeft': '60px'}),
+    html.P("La nube recoge los principales conceptos asociados a las publicaciones científicas de la UFRO durante 2023, permitiendo identificar las temáticas más recurrentes en la actividad investigativa. Entre las palabras más destacadas se encuentran salud, microbiología, nutrición, medioambiente, biotecnología, plantas y cáncer, lo que da cuenta de una fuerte orientación hacia problemáticas de impacto biomédico, ambiental y social. \n \n"
+            "La concentración de estos términos revela una agenda científica alineada con desafíos contemporáneos y prioridades globales, como la sostenibilidad, la salud pública y la innovación biotecnológica. Asimismo, sugiere la consolidación de grupos de investigación activos en estas áreas y una proyección institucional vinculada a la generación de conocimiento aplicado y relevante.", 
+           style={
+                'whiteSpace': 'pre-line',
+                'textAlign': 'justify',
+                'fontSize': '16px',
+                'maxWidth': '1000px',
+                'margin': '0 auto',
+                'padding': '15px'
+               
+                  
+                  
+                  }),
+    html.Div([
+        html.Label("Filtrar por cuartil:", style={
+            'fontWeight': 'bold', 'fontSize': '16px', 'color': '#003865', 'marginRight': '10px'
+        }),
+        dcc.Dropdown(
+            id='filtro-cuartil-nube',
+            options=[{"label": c, "value": c} for c in sorted(df1["Cuartil"].dropna().unique())],
+            placeholder="Selecciona un cuartil",
+            clearable=True,
+            style={
+                'width': '300px', 'borderRadius': '8px', 'padding': '6px',
+                'border': '1px solid #ccc', 'boxShadow': '1px 1px 6px rgba(0,0,0,0.1)',
+                'backgroundColor': '#f5f5f5', 'color': '#003865', 'fontWeight': 'bold'
+            }
+        )
+    ], style={'display': 'flex', 'alignItems': 'center', 'gap': '10px',
+              'marginLeft': '60px', 'marginBottom': '20px'}),
+    dcc.Graph(id='grafico-nube-palabras')
 ])
+
+@app.callback(
+    Output('grafico-mapa', 'figure'),
+    Input('filtro-pais', 'value')
+)
+def actualizar_mapa(pais_seleccionado):
+    conteo = df3['Pais_Edit'].value_counts().reset_index()
+    conteo.columns = ['Pais', 'Articulos']
+    if pais_seleccionado:
+        conteo = conteo[conteo['Pais'] == pais_seleccionado]
+    fig = px.choropleth(
+        conteo,
+        locations='Pais',
+        locationmode='country names',
+        color='Articulos',
+        color_continuous_scale='YlOrRd',
+        projection='natural earth'
+    )
+    fig.update_layout(geo=dict(showframe=False, showcoastlines=True),
+                      margin=dict(t=20, l=20, r=20, b=20))
+    return fig
+
+@app.callback(
+    Output('grafico-nube-palabras', 'figure'),
+    Input('filtro-cuartil-nube', 'value')
+)
+def actualizar_nube(cuartil):
+    if "PALABRAS CLAVE" not in df1.columns:
+        return px.scatter(title="No hay datos de palabras clave disponibles.")
+    df_filtrado = df1[df1["Cuartil"] == cuartil] if cuartil else df1.copy()
+    palabras = df_filtrado["PALABRAS CLAVE"].dropna().astype(str).str.cat(sep='; ').replace(';', ' ')
+    wordcloud = WordCloud(width=1000, height=400,
+                          background_color='white', colormap='viridis').generate(palabras)
+    image = wordcloud.to_image()
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    buffer.seek(0)
+    image_array = np.array(Image.open(buffer))
+    buffer.close()
+    fig = px.imshow(image_array)
+    fig.update_layout(xaxis=dict(showticklabels=False),
+                      yaxis=dict(showticklabels=False),
+                      margin=dict(t=20, l=40, r=40, b=40))
+    return fig
 
 if __name__ == '__main__':
     app.run(debug=True)
