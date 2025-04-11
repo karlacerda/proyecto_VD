@@ -84,10 +84,9 @@ app.layout = html.Div([
 
     html.Div([
         html.P(
-            "El presente dashboard viene a entregar información respecto a las publicaciones científicas de la Web of Science (WoS) de la Universidad de La Frontera (UFRO) registradas por ANID durante el 2023. Con estos antecedentes, aspiramos a brindar una mirada general respecto de la productividad de la Institución. Para la elaboración de este dashboard se ha considerado que la fuente primaria de información la constituye el listado de publicaciones WoS con afiliación a la UFRO elaborado por ANID. \n \n"
-            "Complementariamente, se han incorporado visualizaciones que permiten analizar distintos aspectos de la producción científica: evolución temporal, niveles de impacto según cuartil, liderazgo institucional, redes internacionales de colaboración, diversidad de revistas y principales líneas temáticas abordadas. Este enfoque integral facilita no solo la observación de patrones productivos, sino también la identificación de fortalezas estratégicas que contribuyen al posicionamiento de la universidad en el ámbito científico nacional e internacional.",
-            
-           
+            "El presente dashboard viene a entregar información respecto a las publicaciones científicas de la Web of Science (WoS) de la Universidad de La Frontera (UFRO) registradas por ANID durante el 2023. \n \n"
+            "Con estos antecedentes, se brinda una mirada general respecto a la productividad de la Institución para que autoridades, académicos y profesionales puedan contar con información clara respecto al listado y clasificación de publicaciones WoS con afiliación UFRO.\n \n",
+                 
             style={
                 'whiteSpace': 'pre-line',
                 'textAlign': 'justify',
@@ -100,7 +99,7 @@ app.layout = html.Div([
     ]),
 
     html.H3("Cantidad de artículos por año", style={'marginLeft': '60px'}),
-    html.P("La gráfica muestra la evolución anual del número de publicaciones científicas indexadas en la Web of Science (WoS) con afiliación a la Universidad de La Frontera (UFRO), registradas por ANID. Se observa una tendencia general al alza en la producción científica institucional entre los años 2018 y 2023. Este comportamiento queda reflejado en el aumento sostenido de artículos, destacando especialmente el crecimiento observado a partir del año 2020, con un alza en 2023 que supera las 700 publicaciones. Esta alza sugiere un fortalecimiento progresivo de la actividad investigativa en la universidad durante el periodo analizado.", 
+    html.P("La gráfica muestra la evolución anual del número de publicaciones científicas indexadas en la Web of Science (WoS) con afiliación a la Universidad de La Frontera (UFRO), registradas por ANID.", 
            style={
                 'whiteSpace': 'pre-line',
                 'textAlign': 'justify',
@@ -114,27 +113,21 @@ app.layout = html.Div([
     dcc.Graph(id='grafico-serie-tiempo', figure=fig_serie_tiempo),
 
     html.H3("Cantidad de artículos por cuartil", style={'marginLeft': '60px'}),
-    html.P("La gráfica muestra la distribución de las publicaciones científicas de la UFRO durante 2023 según el cuartil de la revista, conforme al Journal Citation Reports (JCR). Los cuartiles dividen a las revistas en cuatro grupos según su factor de impacto, siendo Q1 el de mayor prestigio. También se incluye una categoría S/Q para revistas sin cuartil asignado. \n \n"
-            "El 40,6% de las publicaciones se concentra en revistas Q1 y el 31,1% en Q2, lo que indica que más del 70% de la producción institucional se ubica en los dos cuartiles superiores. Esta distribución evidencia un fuerte énfasis en la publicación en revistas de alta calidad y visibilidad, lo que contribuye al posicionamiento internacional de la investigación realizada en la UFRO.", 
+    html.P("La gráfica muestra la distribución de las publicaciones científicas de la UFRO durante 2023 según el cuartil de la revista, conforme al Journal Citation Reports (JCR). Los cuartiles dividen a las revistas en cuatro grupos según su factor de impacto, siendo Q1 el de mayor prestigio. También se incluye una categoría S/Q para revistas sin cuartil asignado. \n \n", 
            style={
                 'whiteSpace': 'pre-line',
                 'textAlign': 'justify',
                 'fontSize': '16px',
                 'maxWidth': '1000px',
                 'margin': '0 auto',
-                'padding': '15px'
-                  
-              
-                  
-                  
+                'padding': '15px'               
                   
                   }),
     dcc.Graph(id='grafico-cuartiles',
               figure=px.pie(cuartil_counts, names='Cuartil', values='Cantidad')),
 
     html.H3("Distribución geográfica de artículos por país", style={'marginLeft': '60px'}),
-    html.P("La visualización presenta la distribución geográfica de las publicaciones científicas de la UFRO durante el año 2023, identificando los países de afiliación de los coautores registrados en la Web of Science. Este mapa permite observar el alcance internacional de las colaboraciones científicas desarrolladas por investigadores de la universidad. \n \n"
-            "Se evidencia una presencia significativa de publicaciones en conjunto con instituciones de países como Estados Unidos, España, Alemania, Brasil y China, lo que indica una amplia red de cooperación global. Esta dimensión internacional es un componente clave para el fortalecimiento de la investigación y la visibilidad institucional a nivel mundial.", 
+    html.P("La visualización presenta la distribución geográfica de las publicaciones científicas de la UFRO durante el año 2023, identificando los países de afiliación de los coautores registrados en la Web of Science. Este mapa permite observar el alcance internacional de las colaboraciones científicas desarrolladas por investigadores de la universidad. \n \n", 
            style={
                 'whiteSpace': 'pre-line',
                 'textAlign': 'justify',
@@ -165,8 +158,7 @@ app.layout = html.Div([
     dcc.Graph(id='grafico-mapa'),
 
     html.H3("Distribución de liderazgos UFRO por cuartil", style={'marginLeft': '60px'}),
-    html.P("Esta gráfica muestra la cantidad de publicaciones lideradas por investigadores de la UFRO en 2023, segmentadas según el cuartil de la revista. Se considera liderazgo cuando el autor principal o de correspondencia pertenece a la institución, implicando un rol activo en la conducción del estudio. \n \n"
-            "Se observa que aproximadamente el 38% de estos liderazgos se concentran en revistas Q1 y un 30% en Q2, sumando cerca del 68% en los cuartiles superiores. Esto evidencia que una parte importante de la producción científica liderada desde la UFRO se inserta en revistas de alto impacto, consolidando su posicionamiento como actor relevante en la investigación internacional.", 
+    html.P("Esta gráfica muestra la cantidad de publicaciones lideradas por investigadores de la UFRO en 2023, segmentadas según el cuartil de la revista. Se considera liderazgo cuando el autor principal o de correspondencia pertenece a la institución, implicando un rol activo en la conducción del estudio. \n \n", 
            style={
                 'whiteSpace': 'pre-line',
                 'textAlign': 'justify',
@@ -180,10 +172,9 @@ app.layout = html.Div([
     dcc.Graph(id='grafico-correlacion', figure=fig_correlacion),
 
     html.H3("Distribución de revistas por cuartil", style={'marginLeft': '60px'}),
-    html.P("La gráfica permite visualizar la variedad de revistas científicas en las que publicó la UFRO durante 2023, lo que entrega una perspectiva sobre la amplitud de los espacios editoriales utilizados por la institución. La presencia de una gran cantidad de revistas distintas indica una estrategia de difusión diversa, que abarca múltiples áreas del conocimiento. \n \n "
-            "El predominio de revistas clasificadas en los cuartiles superiores (Q1 y Q2) sugiere que la UFRO no solo publica con frecuencia, sino que también selecciona cuidadosamente medios con altos estándares editoriales. Esta diversidad de revistas refuerza la proyección internacional y el alcance interdisciplinario de la investigación institucional.", 
+    html.P("La gráfica permite visualizar la variedad de revistas científicas en las que publicó la UFRO durante 2023, lo que entrega una perspectiva sobre la amplitud de los espacios editoriales utilizados por la institución. La presencia de una gran cantidad de revistas distintas indica una estrategia de difusión diversa, que abarca múltiples áreas del conocimiento. \n \n ", 
            style={
-                 'whiteSpace': 'pre-line',
+                'whiteSpace': 'pre-line',
                 'textAlign': 'justify',
                 'fontSize': '16px',
                 'maxWidth': '1000px',
@@ -195,12 +186,20 @@ app.layout = html.Div([
     dcc.Graph(id='grafico-treemap', figure=fig_treemap),
 
     html.H3("Top 5 editoriales por número de publicaciones", style={'marginLeft': '60px'}),
-    html.P("Aquí va la descripción del gráfico", style={'marginLeft': '60px'}),
+    html.P("La gráfica muestra las cinco editoriales científicas con mayor número de publicaciones afiliadas a la UFRO durante 2023. Destaca ampliamente MDPI, con una diferencia considerable respecto del resto, lo que refleja una fuerte presencia institucional en esta plataforma. Le siguen Elsevier, la Sociedad Chilena de Anatomía, Frontiers Media SA y Wiley, todas editoriales de reconocida trayectoria. \n \n ", 
+           style={
+                'whiteSpace': 'pre-line',
+                'textAlign': 'justify',
+                'fontSize': '16px',
+                'maxWidth': '1000px',
+                'margin': '0 auto',
+                'padding': '15px'
+               
+               }),
     dcc.Graph(id='grafico-editoriales', figure=fig_editoriales),
 
     html.H3("Nube de palabras clave", style={'marginLeft': '60px'}),
-    html.P("La nube recoge los principales conceptos asociados a las publicaciones científicas de la UFRO durante 2023, permitiendo identificar las temáticas más recurrentes en la actividad investigativa. Entre las palabras más destacadas se encuentran salud, microbiología, nutrición, medioambiente, biotecnología, plantas y cáncer, lo que da cuenta de una fuerte orientación hacia problemáticas de impacto biomédico, ambiental y social. \n \n"
-            "La concentración de estos términos revela una agenda científica alineada con desafíos contemporáneos y prioridades globales, como la sostenibilidad, la salud pública y la innovación biotecnológica. Asimismo, sugiere la consolidación de grupos de investigación activos en estas áreas y una proyección institucional vinculada a la generación de conocimiento aplicado y relevante.", 
+    html.P("La nube recoge los principales conceptos asociados a las publicaciones científicas de la UFRO durante 2023, permitiendo identificar las temáticas más recurrentes en la actividad investigativa. Entre las palabras más destacadas se encuentran salud, microbiología, nutrición, medioambiente, biotecnología, plantas y cáncer, lo que da cuenta de una fuerte orientación hacia problemáticas de impacto biomédico, ambiental y social. \n \n", 
            style={
                 'whiteSpace': 'pre-line',
                 'textAlign': 'justify',
