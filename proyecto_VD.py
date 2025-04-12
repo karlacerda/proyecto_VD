@@ -38,9 +38,9 @@ cuartil_counts.columns = ["Cuartil", "Cantidad"]
 correlacion_data = df1[["Cuartil", "ES UFRO?"]].dropna()
 correlacion_data["ES UFRO?"] = correlacion_data["ES UFRO?"].replace({1: "Sí", 0: "No"}).astype(str).str.capitalize()
 grouped_counts = correlacion_data.value_counts().reset_index()
-grouped_counts.columns = ["Cuartil", "ES UFRO?", "Cantidad"]
-fig_correlacion = px.bar(grouped_counts, x="Cuartil", y="Cantidad", color="ES UFRO?", barmode="group",
-    labels={"Cantidad": "Número de artículos"},
+grouped_counts.columns = ["Cuartil", "Liderazgo UFRO", "Cantidad"]
+fig_correlacion = px.bar(grouped_counts, x="Cuartil", y="Cantidad", color="Liderazgo UFRO", barmode="group",
+    labels={"Cantidad": "Número de artículos",  "Liderazgo UFRO": "¿Liderado por UFRO?"},
     category_orders={"Cuartil": ["Q1", "Q2", "Q3", "Q4", "S/Q"]}
 )
 
